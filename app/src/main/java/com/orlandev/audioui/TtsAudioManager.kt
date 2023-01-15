@@ -170,17 +170,6 @@ fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
 }
 
 
-@Preview
-@Composable
-fun AudioUIPreview() {
-    MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            TtsAudioUI(debug = true)
-        }
-    }
-}
-
-
 object TtsAudioManager {
 
     private var initialized = false

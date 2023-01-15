@@ -6,19 +6,28 @@ import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
 import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.random.Random
@@ -49,48 +58,20 @@ data class AudioContent(
  *
  */
 
-sealed class AudioUI {
-    object SimpleUI : AudioUI()
-    object ListUI : AudioUI()
-}
-
 @Composable
 fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
 
     val ttsCurrentAudioContent = TtsAudioManager.currentTTSPlaying.value
-    val ttsAudioContent = remember {
+    val ttsAudioContentList = remember {
         derivedStateOf {
             TtsAudioManager.contentToSpeech.toList()
         }
     }
 
 
-    val typeAudioUI = remember {
-        mutableStateOf(AudioUI.SimpleUI)
+    var expanded by remember {
+        mutableStateOf(false)
     }
-
-    Card(
-        modifier = Modifier
-            .height(400.dp)
-            .fillMaxWidth()
-            .then(modifier)
-            .padding(8.dp)
-            .align(Alignment.BottomCenter)
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            item {
-                Text(text = "HI")
-            }
-            items(ttsAudioContent.value) { currentAudio ->
-                Card {
-                    Text(text = currentAudio.title)
-                }
-            }
-        }
-    }
-
-
-/*
 
     AnimatedVisibility(
         modifier = Modifier.align(Alignment.BottomCenter),
@@ -98,102 +79,199 @@ fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
         exit = slideOutVertically(targetOffsetY = { 200 }) + fadeOut(),
         visible = TtsAudioManager.showUi.value
     ) {
-        Card(
-            modifier = Modifier
-                .height(100.dp)
-                .fillMaxWidth()
-                .then(modifier)
-                .padding(8.dp)
+
+        SimpleUI(
+            modifier = modifier,
+            ttsCurrentAudioContent = ttsCurrentAudioContent,
+            ttsAudioContentList.value,
+            expanded
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            expanded = !expanded
+        }
+
+    }
+
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+internal fun BoxScope.SimpleUI(
+    modifier: Modifier,
+    ttsCurrentAudioContent: AudioContent?,
+    ttsAudioContentList: List<AudioContent>,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    val internalModifier = if (expanded) Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .background(MaterialTheme.colorScheme.background) else Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+
+    LazyColumn(
+        modifier = internalModifier
+            .then(Modifier.animateContentSize())
+            .then(modifier),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+
+        item {
+            Card(
+                onClick = onClick,
+                modifier = Modifier
+                    .height(100.dp)
+                    .fillMaxWidth()
+                    .then(modifier)
+                    .padding(8.dp)
             ) {
-
-
-                Card(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .padding(end = 8.dp)
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    SubcomposeAsyncImage(contentDescription = "",
-                        model = ttsAudioContent?.imgUrl,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                        error = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.LightGray)
-                            )
-                        },
-                        loading = {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
 
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        })
+
+                    Card(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(end = 8.dp)
+                    ) {
+                        SubcomposeAsyncImage(contentDescription = "",
+                            model = ttsCurrentAudioContent?.imgUrl,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            error = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.LightGray)
+                                )
+                            },
+                            loading = {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            })
+                    }
+                    Column(
+                        modifier = Modifier
+                            .wrapContentHeight()
+                            .width(100.dp)
+                            .weight(2f)
+                            .padding(end = 8.dp)
+                    ) {
+
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 2,
+                            text = ttsCurrentAudioContent?.title ?: "Title Testing",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        AudioFX(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(20.dp),
+                            maxLines = 40,
+                            lineWidth = 1.dp,
+                            maxLineHeight = 40
+                        )
+                    }
+
+
+                    Row(
+                        modifier = Modifier
+                            .width(20.dp)
+                            .weight(1f)
+                            .clip(CircleShape)
+                            .background(Color.LightGray.copy(alpha = 0.2f)),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        IconButton(onClick = {
+                            TtsAudioManager.stop()
+                        }) {
+                            Icon(Icons.Default.Stop, contentDescription = "Stop")
+                        }
+
+                        IconButton(onClick = {
+                            TtsAudioManager.nextTTS()
+                        }) {
+                            Icon(Icons.Default.SkipNext, contentDescription = "Next")
+                        }
+
+                    }
+
                 }
-                Column(
+            }
+        }
+
+        if (expanded) {
+            items(ttsAudioContentList, key = {it.title}) { item ->
+
+                Row(
                     modifier = Modifier
-                        .wrapContentHeight()
-                        .width(100.dp)
-                        .weight(2f)
-                        .padding(horizontal = 4.dp)
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 8.dp).animateItemPlacement(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
                 ) {
+
+                    Card(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .padding(end = 8.dp)
+                    ) {
+                        SubcomposeAsyncImage(contentDescription = "",
+                            model = item.imgUrl,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            error = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.LightGray)
+                                )
+                            },
+                            loading = {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            })
+                    }
+
+                    Spacer(modifier = Modifier.size(8.dp))
 
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 2,
-                        text = ttsAudioContent?.title + " dsfasdfjasf alsd fkladjs flas df"
-                            ?: "Title Testing",
+                        maxLines = 1,
+                        text = ttsCurrentAudioContent?.title ?: "Title Testing",
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    AudioFX(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(20.dp),
-                        maxLines = 40,
-                        lineWidth = 1.dp,
-                        maxLineHeight = 40
-                    )
                 }
-
-
-                Row(
-                    modifier = Modifier
-                        .width(20.dp)
-                        .weight(1f)
-                        .clip(CircleShape)
-                        .background(Color.LightGray.copy(alpha = 0.2f)),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    IconButton(onClick = {
-                        TtsAudioManager.stop()
-                    }) {
-                        Icon(Icons.Default.Stop, contentDescription = "Stop")
-                    }
-
-                    IconButton(onClick = {
-                        TtsAudioManager.nextTTS()
-                    }) {
-                        Icon(Icons.Default.SkipNext, contentDescription = "Next")
-                    }
-
-                }
-
             }
+
+            item {
+                Spacer(modifier = Modifier.size(20.dp))
+            }
+
         }
     }
-*/
 
 }
 
@@ -202,16 +280,16 @@ object TtsAudioManager {
 
     private var initialized = false
 
-    /***
-     *  Use this to show or not the UI     *
-     */
-    var showUi = TtsSystem.isPlaying
-        private set
-
     var contentToSpeech = mutableStateListOf<AudioContent>()
         private set
 
     var cantDataToSpeech: MutableState<Int> = mutableStateOf(0)
+        private set
+
+    /***
+     *  Use this to show or not the UI     *
+     */
+    var showUi = TtsSystem.isPlaying
         private set
 
     var currentTTSPlaying = mutableStateOf<AudioContent?>(null)

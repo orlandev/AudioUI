@@ -4,20 +4,26 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,9 +33,7 @@ import java.util.*
 import kotlin.random.Random
 
 data class AudioContent(
-    val imgUrl: String,
-    val textToSpeech: String,
-    val title: String
+    val imgUrl: String, val textToSpeech: String, val title: String
 )
 
 
@@ -55,92 +59,127 @@ data class AudioContent(
  */
 
 @Composable
-fun TtsAudioUI(modifier: Modifier = Modifier) {
+fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier, debug: Boolean = false) {
 
-    val imgUrl = TtsAudioManager.currentTTSPlaying.value
+    val ttsAudioContent = TtsAudioManager.currentTTSPlaying.value
 
-    Card(
-        modifier = Modifier
-            .height(90.dp)
-            .then(modifier)
-            .padding(8.dp)
+
+
+    AnimatedVisibility(
+        modifier = Modifier.align(Alignment.BottomCenter),
+        enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { 200 }) + fadeOut(),
+        visible = TtsAudioManager.showUi.value
     ) {
-        Row(
+        Card(
             modifier = Modifier
-                .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
+                .height(100.dp)
+                .fillMaxWidth()
+                .then(modifier)
+                .padding(8.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
 
-            if (imgUrl != null) {
+
                 Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .weight(2f)
+                        .size(100.dp)
+                        .padding(end = 8.dp)
                 ) {
-                    SubcomposeAsyncImage(
-                        contentDescription = "",
-                        model = imgUrl,
+                    SubcomposeAsyncImage(contentDescription = "",
+                        model = ttsAudioContent?.imgUrl,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
-                        loading = {
+                        error = {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize(),
+                                    .fillMaxSize()
+                                    .background(Color.LightGray)
+                            )
+                        },
+                        loading = {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
 
                             ) {
                                 CircularProgressIndicator()
                             }
-                        }
-                    )
+                        })
                 }
-            } else {
-                Card(
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .wrapContentHeight()
+                        .width(100.dp)
                         .weight(2f)
+                        .padding(horizontal = 4.dp)
                 ) {
-                    Box(
+
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
+                        text = ttsAudioContent?.title+" dsfasdfjasf alsd fkladjs flas df" ?: "Title Testing",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    AudioFX(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
+                            .height(20.dp),
+                        maxLines = 40,
+                        lineWidth = 1.dp,
+                        maxLineHeight = 40
                     )
                 }
-            }
-            //}
 
-            Text(
-                modifier = Modifier
-                    .weight(6f)
-                    .padding(start = 4.dp),
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2,
-                text = TtsAudioManager.currentTTSPlaying.value?.title ?: "",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Light
-            )
 
-            AudioFX(
-                modifier = Modifier
-                    .width(70.dp)
-                    .height(20.dp),
-                maxLines = 20,
-                lineWidth = 1.dp,
-                maxLineHeight = 40
-            )
+                Row(
+                    modifier = Modifier
+                        .width(20.dp)
+                        .weight(1f)
+                        .clip(CircleShape)
+                        .background(Color.LightGray.copy(alpha = 0.2f))
+                        ,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    IconButton(onClick = {
+                        TtsAudioManager.stop()
+                    }) {
+                        Icon(Icons.Default.Stop, contentDescription = "Stop")
+                    }
 
-            IconButton(
-                modifier = Modifier
-                    .weight(2f),
-                onClick = {
-                    TtsAudioManager.stop()
+                    IconButton(onClick = {
+                        TtsAudioManager.nextTTS()
+                    }) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Next")
+                    }
+
                 }
-            )
-            {
-                Icon(Icons.Default.Close, contentDescription = "Close")
-            }
 
+            }
+        }
+    }
+
+}
+
+
+@Preview
+@Composable
+fun AudioUIPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.fillMaxSize()) {
+            TtsAudioUI(debug = true)
         }
     }
 }
+
 
 object TtsAudioManager {
 
@@ -233,8 +272,7 @@ private object TtsSystem {
             when (status) {
                 TextToSpeech.SUCCESS -> {
                     Log.d("MyTextToSpeech", "INNER_FIRST")
-                    ttsSystem?.setOnUtteranceProgressListener(object :
-                        UtteranceProgressListener() {
+                    ttsSystem?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String) {
                             Log.d("MyTextToSpeech", "On Start")
                             isPlaying.value = true
@@ -285,7 +323,7 @@ private object TtsSystem {
 
 
 @Composable
-fun AudioFX(
+internal fun AudioFX(
     modifier: Modifier = Modifier,
     maxLines: Int = 20,
     maxLineHeight: Int = 100,
@@ -296,8 +334,7 @@ fun AudioFX(
         modifier = modifier
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
@@ -309,7 +346,7 @@ fun AudioFX(
 }
 
 @Composable
-fun LineBox(maxHeight: Int, color: Color, timeMillis: Long = 100, lineWidth: Dp) {
+internal fun LineBox(maxHeight: Int, color: Color, timeMillis: Long = 100, lineWidth: Dp) {
     val rand = remember {
         mutableStateOf(0.dp)
     }

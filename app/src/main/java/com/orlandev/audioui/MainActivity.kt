@@ -31,14 +31,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Greeting("Android")
-                        AnimatedVisibility(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                            enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn(),
-                            exit = slideOutVertically(targetOffsetY = { 200 }) + fadeOut(),
-                            visible = TtsAudioManager.showUi.value
-                        ) {
                             TtsAudioUI()
-                        }
                     }
                 }
             }
@@ -57,35 +50,7 @@ fun Greeting(name: String) {
     TtsAudioManager.initialize(context, locale)
 
     LaunchedEffect(Unit) {
-        TtsAudioManager.addTTS(
-            AudioContent(
-                "url image",
-                "Esto es una prueba",
-                "title  ${Random.nextInt()}"
-            )
-        )
-
-        TtsAudioManager.addTTS(
-            AudioContent(
-                "url image",
-                "Esta es la segunda prueba",
-                "title  ${Random.nextInt()}"
-            )
-        )
-        TtsAudioManager.addTTS(
-            AudioContent(
-                "url image",
-                "Una tercera",
-                "title  ${Random.nextInt()}"
-            )
-        )
-        TtsAudioManager.addTTS(
-            AudioContent(
-                "url image",
-                "La ultima",
-                "title  ${Random.nextInt()}"
-            )
-        )
+        generateTTS()
     }
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -100,6 +65,14 @@ fun Greeting(name: String) {
         }) {
 
             Text(text = "NEXT")
+
+        }
+
+        Button(onClick = {
+            generateTTS()
+        }) {
+
+            Text(text = "NEW")
 
         }
 
@@ -128,4 +101,36 @@ fun Greeting(name: String) {
 
     }
 
+}
+
+fun generateTTS(){
+    TtsAudioManager.addTTS(
+        AudioContent(
+            "https://cdn.pixabay.com/photo/2023/01/02/04/13/dog-7691238_640.jpg",
+            "GraphQL es un lenguaje de consulta y manipulación de datos para APIs, y un entorno de ejecución para realizar consultas con datos existentes.\u200B GraphQL fue desarrollado internamente por Facebook en 2012 antes de ser liberado públicamente en 2015.\u200B",
+            "title  ${Random.nextInt()}"
+        )
+    )
+
+    TtsAudioManager.addTTS(
+        AudioContent(
+            "https://cdn.pixabay.com/photo/2022/08/20/09/16/nature-7398655__340.jpg",
+            "Kotlin es un lenguaje de programación de tipado estático que corre sobre la máquina virtual de Java y que también puede ser compilado a código fuente de JavaScript. Es desarrollado principalmente por JetBrains en sus oficinas de San Petersburgo.",
+            "title  ${Random.nextInt()}"
+        )
+    )
+    TtsAudioManager.addTTS(
+        AudioContent(
+            "https://cdn.pixabay.com/photo/2022/11/14/20/14/compass-7592447__340.jpg",
+            "Jetpack Compose es un framework (estructura o marco de trabajo que, bajo parámetros estandarizados, ejecutan tareas específicas en el desarrollo de un software) con la particularidad de ejecutar prácticas modernas en los desarrolladores de software a partir de la reutilización de componentes, así como también contando ",
+            "title  ${Random.nextInt()}"
+        )
+    )
+    TtsAudioManager.addTTS(
+        AudioContent(
+            "https://cdn.pixabay.com/photo/2022/11/28/14/07/skyline-7622147_640.jpg",
+            "Microsoft Corporation es una empresa tecnológica multinacional estadounidense que produce software de computadora, productos electrónicos de consumo, computadoras personales y servicios relacionados, con sede en el campus de Microsoft ubicado en Redmond, Washington, Estados Unidos",
+            "title  ${Random.nextInt()}"
+        )
+    )
 }

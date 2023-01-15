@@ -8,26 +8,17 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
 import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.random.Random
@@ -58,12 +49,48 @@ data class AudioContent(
  *
  */
 
+sealed class AudioUI {
+    object SimpleUI : AudioUI()
+    object ListUI : AudioUI()
+}
+
 @Composable
 fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
 
-    val ttsAudioContent = TtsAudioManager.currentTTSPlaying.value
+    val ttsCurrentAudioContent = TtsAudioManager.currentTTSPlaying.value
+    val ttsAudioContent = remember {
+        derivedStateOf {
+            TtsAudioManager.contentToSpeech.toList()
+        }
+    }
 
 
+    val typeAudioUI = remember {
+        mutableStateOf(AudioUI.SimpleUI)
+    }
+
+    Card(
+        modifier = Modifier
+            .height(400.dp)
+            .fillMaxWidth()
+            .then(modifier)
+            .padding(8.dp)
+            .align(Alignment.BottomCenter)
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            item {
+                Text(text = "HI")
+            }
+            items(ttsAudioContent.value) { currentAudio ->
+                Card {
+                    Text(text = currentAudio.title)
+                }
+            }
+        }
+    }
+
+
+/*
 
     AnimatedVisibility(
         modifier = Modifier.align(Alignment.BottomCenter),
@@ -123,7 +150,8 @@ fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
                         modifier = Modifier.fillMaxWidth(),
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 2,
-                        text = ttsAudioContent?.title+" dsfasdfjasf alsd fkladjs flas df" ?: "Title Testing",
+                        text = ttsAudioContent?.title + " dsfasdfjasf alsd fkladjs flas df"
+                            ?: "Title Testing",
                         style = MaterialTheme.typography.titleMedium,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -144,8 +172,7 @@ fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
                         .width(20.dp)
                         .weight(1f)
                         .clip(CircleShape)
-                        .background(Color.LightGray.copy(alpha = 0.2f))
-                        ,
+                        .background(Color.LightGray.copy(alpha = 0.2f)),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
@@ -166,6 +193,7 @@ fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
             }
         }
     }
+*/
 
 }
 
@@ -180,7 +208,8 @@ object TtsAudioManager {
     var showUi = TtsSystem.isPlaying
         private set
 
-    private var contentToSpeech: MutableSet<AudioContent> = mutableSetOf()
+    var contentToSpeech = mutableStateListOf<AudioContent>()
+        private set
 
     var cantDataToSpeech: MutableState<Int> = mutableStateOf(0)
         private set

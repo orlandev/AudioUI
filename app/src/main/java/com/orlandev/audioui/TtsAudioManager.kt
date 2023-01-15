@@ -59,7 +59,7 @@ data class AudioContent(
  */
 
 @Composable
-fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier, debug: Boolean = false) {
+fun BoxScope.TtsAudioUI(modifier: Modifier = Modifier) {
 
     val ttsAudioContent = TtsAudioManager.currentTTSPlaying.value
 
